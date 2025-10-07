@@ -10,4 +10,11 @@
     // "rust-analyzer.cargo.features": [
     //     "board_qemu"
     // ]
+    
+    // Rustfmt 配置 - 使用默认配置
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true
+    }
 }
