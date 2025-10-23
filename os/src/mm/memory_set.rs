@@ -268,6 +268,11 @@ impl MemorySet {
 
     ///Remove all `MapArea`
     pub fn recycle_data_pages(&mut self) {
+        // 先对每个area调用unmap来清理页表
+        for area in self.areas.iter_mut() {
+            area.unmap(&mut self.page_table);
+        }
+        // 再清空areas列表
         self.areas.clear();
     }
 
@@ -299,6 +304,36 @@ impl MemorySet {
         } else {
             false
         }
+    }
+
+    /// 检查指定的虚拟地址范围是否与现有的映射重叠
+    pub fn check_overlap(&self, start_vpn: VirtPageNum, end_vpn: VirtPageNum) -> bool {
+        for area in &self.areas {
+            let area_start = area.vpn_range.get_start();
+            let area_end = area.vpn_range.get_end();
+            // 检查是否有重叠：[area_start, area_end) 与 [start_vpn, end_vpn) 重叠
+            if area_start < end_vpn && start_vpn < area_end {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// 移除与指定虚拟地址范围完全匹配的映射区域，如果找到则返回true
+    pub fn remove_area_with_range(&mut self, start_vpn: VirtPageNum, end_vpn: VirtPageNum) -> bool {
+        for (idx, area) in self.areas.iter().enumerate() {
+            let area_start = area.vpn_range.get_start();
+            let area_end = area.vpn_range.get_end();
+            
+            // 检查起始地址和结束地址是否完全匹配
+            if area_start == start_vpn && area_end == end_vpn {
+                // 找到完全匹配的区域，删除它
+                let mut removed_area = self.areas.remove(idx);
+                removed_area.unmap(&mut self.page_table);
+                return true;
+            }
+        }
+        false
     }
 }
 /// map area structure, controls a contiguous piece of virtual memory
